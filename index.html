@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>S.P.A.R.K. Prototype</title>
+
+<style>
+  :root{
+    --bg:#05070c; --bg2:#0b0f14;
+    --text:#fff;
+
+    /* half-inch top bar (best-effort) */
+    --topbar-h: 0.5in;
+    --topbar-fallback: 64px;
+  }
+
+  html,body{
+    height:100%;
+    margin:0;
+    font-family:system-ui, Arial, sans-serif;
+    color:var(--text);
+    background:
+      radial-gradient(900px 600px at 20% 15%, rgba(80,150,255,.18), transparent 55%),
+      radial-gradient(900px 600px at 80% 20%, rgba(120,255,200,.14), transparent 55%),
+      linear-gradient(180deg,var(--bg),var(--bg2));
+    overflow:hidden;
+
+    -webkit-user-select:none;
+    user-select:none;
+    -webkit-touch-callout:none;
+    touch-action: manipulation;
+  }
+
+  .hidden{display:none!important;}
+  .belowTopbar{ padding-top: max(var(--topbar-h), var(--topbar-fallback)); }
+
+  /* ===== TOP BAR ===== */
+  #topbar{
+    position:fixed;
+    top:0; left:0; right:0;
+    height: var(--topbar-h);
+    min-height: var(--topbar-fallback);
+    display:grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    padding-top: env(safe-area-inset-top);
+    z-index: 30000; /* above destination + emergency */
+    background: rgba(0,0,0,.30);
+    border-bottom: 1px solid rgba(255,255,255,.10);
+    backdrop-filter: blur(10px);
+  }
+  .regionBtn{
+    width:100%;
+    height:100%;
+    border:0;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background: rgba(255,255,255,.08);
+    color: var(--text);
+    font-weight: 1000;
+    font-size: clamp(22px, 3.2vw, 44px);
+    letter-spacing: .5px;
+    border-right: 1px solid rgba(255,255,255,.10);
+  }
+  .regionBtn:last-child{ border-right: 0; }
+  .regionBtn:active{ filter: brightness(.90); }
+
+  /* ===== STATUS ===== */
+  #status{
+    position:fixed;
+    left:0; right:0; bottom:0;
+    padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+    text-align:center;
+    font-size:14px;
+    color:rgba(255,255,255,.92);
+    background:linear-gradient(to top, rgba(0,0,0,.55), rgba(0,0,0,0));
+    pointer-events:none;
+    z-index: 29999;
+  }
+
+  /* ===== LOGIN ===== */
+  #loginScreen{
+    height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+  }
+  .loginBox{
+    width: min(560px, 92vw);
+    border-radius: 22px;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.14);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 20px 70px rgba(0,0,0,.35);
+    padding: 22px 18px 18px 18px;
+  }
+  .heroTitle{
+    margin: 0;
+    font-weight: 1000;
+    font-size: clamp(22px, 4.5vw, 34px);
+    letter-spacing: .3px;
+    text-align:center;
+  }
+  .heroSub{
+    margin: 8px 0 16px 0;
+    text-align:center;
+    font-weight: 800;
+    color: rgba(255,255,255,.90);
+    font-size: clamp(13px, 2.2vw, 16px);
+  }
+  .row{ display:flex; gap:10px; flex-wrap:wrap; }
+  input{
+    flex:1 1 240px;
+    border-radius:14px;
+    border:1px solid rgba(255,255,255,.18);
+    background:rgba(255,255,255,.10);
+    color:var(--text);
+    padding:14px 12px;
+    font-size:16px;
+    outline:none;
+    -webkit-user-select:text;
+    user-select:text;
+  }
+  button.primary{
+    width:100%;
+    border:0;
+    border-radius:14px;
+    padding:14px 14px;
+    font-weight:1000;
+    cursor:pointer;
+    background:rgba(255,255,255,.92);
+    color:#0b0f14;
+    font-size:18px;
+    margin-top: 12px;
+  }
+  button.primary:active{ filter: brightness(.96); }
+  .hint{
+    margin: 12px 0 0 0;
+    text-align:center;
+    color: rgba(255,255,255,.75);
+    font-size: 13px;
+    line-height: 1.35;
+  }
+  .footerTag{
+    margin: 16px 0 0 0;
+    text-align:center;
+    font-weight: 900;
+    letter-spacing: .5px;
+    font-size: 13px;
+    color: rgba(255,255,255,.88);
+  }
+
+  /* ===== INTRO ===== */
+  #introScreen{ height:100vh; width:100vw; }
+  #startButton{
+    width:100vw;
+    height: calc(100vh - max(var(--topbar-h), var(--topbar-fallback)));
+    border:0;
+    cursor:pointer;
+    background: linear-gradient(135deg, #ffffff, #eaf2ff);
+    color:#0b0f14;
+    font-weight: 1000;
+    font-size: clamp(30px, 8vw, 70px);
+    letter-spacing: 1px;
+  }
+  #startButton:active{ filter: brightness(.96); }
+
+  /* ===== LANDSCAPE ACTIONS ===== */
+  #landscapeScreen{
+    display:none;
+    width:100vw;
+    height: calc(100vh - max(var(--topbar-h), var(--topbar-fallback)));
+    flex-direction: row;
+  }
+  .halfBtn{
+    width: 50vw;
+    height: 100%;
+    border:0;
+    cursor:pointer;
+    padding: 32px;
+    text-align:left;
+    color:#0b0f14;
+  }
+  .halfBtn .title{
+    font-size: clamp(26px, 4.2vw, 56px);
+    font-weight: 1000;
+    margin: 0 0 12px 0;
+  }
+  .halfBtn .desc{
+    font-size: clamp(14px, 2vw, 18px);
+    opacity: .82;
+    line-height: 1.4;
+    max-width: 42ch;
+  }
+  #leftBtn{ background: linear-gradient(135deg,#e9f3ff,#d9e9ff); }
+  #rightBtn{ background: linear-gradient(135deg,#eaffea,#d6ffd6); }
+
+  /* ===== DESTINATION FULLSCREEN (3 REGIONS) ===== */
+  #destScreen{
+    position: fixed;
+    inset: 0;
+    z-index: 15000;
+    display:none;
+    background:
+      radial-gradient(900px 600px at 20% 15%, rgba(80,150,255,.20), transparent 55%),
+      radial-gradient(900px 600px at 80% 20%, rgba(120,255,200,.16), transparent 55%),
+      rgba(0,0,0,.35);
+    backdrop-filter: blur(10px);
+    padding-top: max(var(--topbar-h), var(--topbar-fallback));
+  }
+  #destRegions{
+    display:grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    width:100vw;
+    height: calc(100vh - max(var(--topbar-h), var(--topbar-fallback)));
+  }
+  .destBtn{
+    border:0;
+    width:100%;
+    height:100%;
+    cursor:pointer;
+    color:#0b0f14;
+    padding: 26px;
+    text-align:left;
+    border-right: 1px solid rgba(255,255,255,.12);
+  }
+  .destBtn:last-child{ border-right:0; }
+  .destBtn .big{
+    font-size: clamp(28px, 4vw, 60px);
+    font-weight: 1000;
+    margin: 0 0 10px 0;
+  }
+  .destBtn .small{
+    font-size: clamp(14px, 2vw, 18px);
+    opacity: .85;
+    max-width: 40ch;
+    line-height: 1.35;
+  }
+  #destLeft{  background: linear-gradient(135deg,#fff3e6,#ffe3cc); }
+  #destMid{   background: linear-gradient(135deg,#e9f3ff,#d9e9ff); }
+  #destRight{ background: linear-gradient(135deg,#eaffea,#d6ffd6); }
+
+  /* ===== EMERGENCY FULLSCREEN OVERLAY ===== */
+  #emergencyOverlay{
+    position: fixed;
+    inset: 0;
+    z-index: 20000; /* still below topbar */
+    display:none;
+    background: rgba(180, 0, 0, .92);
+    padding-top: max(var(--topbar-h), var(--topbar-fallback));
+  }
+
+  /* Top info area (text) */
+  #emergencyInfo{
+    padding: 14px 16px 10px 16px;
+    text-align:center;
+  }
+  #emergencyTitle{
+    font-weight: 1100;
+    font-size: clamp(22px, 5vw, 44px);
+    margin: 0 0 6px 0;
+  }
+  #emergencySub{
+    margin: 0;
+    font-weight: 900;
+    opacity: .95;
+    font-size: clamp(13px, 2.6vw, 18px);
+  }
+
+  /* Buttons: left half = call, right half = cancel (whole screen) */
+  #emergencyButtons{
+    height: calc(100vh - max(var(--topbar-h), var(--topbar-fallback)) - 92px);
+    display:flex;
+    width:100vw;
+  }
+  .emHalf{
+    width:50vw;
+    height:100%;
+    border:0;
+    cursor:pointer;
+    font-weight: 1100;
+    font-size: clamp(18px, 3.5vw, 34px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding: 18px;
+  }
+  #callBtn{
+    background: rgba(255,255,255,.95);
+    color:#4a0000;
+  }
+  #cancelBtn{
+    background: rgba(0,0,0,.18);
+    color:#fff;
+    border-left: 1px solid rgba(255,255,255,.25);
+  }
+  #callBtn:active, #cancelBtn:active{ filter: brightness(.92); }
+
+</style>
+</head>
+
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar" class="hidden" aria-label="Top controls bar">
+  <button class="regionBtn" id="repeatBtn" type="button">REPEAT</button>
+  <button class="regionBtn" id="stopBtn" type="button">STOP</button>
+  <button class="regionBtn" id="backBtn" type="button">BACK</button>
+</div>
+
+<!-- LOGIN -->
+<section id="loginScreen" aria-label="Login screen">
+  <div class="loginBox">
+    <h1 class="heroTitle">Welcome to the S.P.A.R.K. System</h1>
+    <div class="heroSub">(Smart Portable Assistive Range-sensing Kit)</div>
+
+    <div class="row">
+      <input id="userInput" placeholder="Username" autocomplete="username" />
+      <input id="passInput" placeholder="Password" type="password" autocomplete="current-password" />
+    </div>
+
+    <button id="loginBtn" class="primary" type="button">LOGIN</button>
+
+    <div class="hint">
+      Double-tap anywhere to skip login<br/>
+      Triple-tap anywhere for emergency call
+    </div>
+
+    <div class="footerTag">AI ASSISTANT PROTOTYPE for VISUALLY IMPAIRED INDIVIDUALS</div>
+  </div>
+</section>
+
+<!-- INTRO -->
+<section id="introScreen" class="hidden belowTopbar" aria-label="Introduction screen">
+  <button id="startButton" type="button">START</button>
+</section>
+
+<!-- LANDSCAPE -->
+<section id="landscapeWrap" class="hidden belowTopbar" aria-label="Landscape wrapper">
+  <div id="landscapeScreen">
+    <button id="leftBtn" class="halfBtn" type="button">
+      <div class="title">AI Assistive Camera</div>
+      <div class="desc">The AI that will serve as your eyes.</div>
+    </button>
+    <button id="rightBtn" class="halfBtn" type="button">
+      <div class="title">Google Maps</div>
+      <div class="desc">Opens your saved places, then starts navigation.</div>
+    </button>
+  </div>
+</section>
+
+<!-- DESTINATION SCREEN -->
+<div id="destScreen" aria-label="Destination screen">
+  <div id="destRegions">
+    <button id="destLeft" class="destBtn" type="button" aria-label="Home destination (left)">
+      <div class="big">HOME</div>
+      <div class="small">Left side: Home destination.</div>
+    </button>
+
+    <button id="destMid" class="destBtn" type="button" aria-label="PCLU destination (middle)">
+      <div class="big">PCLU</div>
+      <div class="small">Middle: PCLU Agoo, La Union.</div>
+    </button>
+
+    <button id="destRight" class="destBtn" type="button" aria-label="CSI destination (right)">
+      <div class="big">CSI</div>
+      <div class="small">Right side: CSI Agoo, La Union.</div>
+    </button>
+  </div>
+</div>
+
+<!-- EMERGENCY OVERLAY -->
+<div id="emergencyOverlay" aria-label="Emergency overlay">
+  <div id="emergencyInfo">
+    <h2 id="emergencyTitle">EMERGENCY</h2>
+    <p id="emergencySub">Caretaker: 0991 944 9953</p>
+  </div>
+
+  <div id="emergencyButtons">
+    <!-- ✅ Left half = Call caretaker -->
+    <button id="callBtn" class="emHalf" type="button" aria-label="Call caretaker (left side)">
+      CALL CARETAKER
+    </button>
+    <!-- ✅ Right half = Cancel -->
+    <button id="cancelBtn" class="emHalf" type="button" aria-label="Cancel emergency (right side)">
+      CANCEL
+    </button>
+  </div>
+</div>
+
+<div id="status" aria-live="polite"></div>
+
+<script>
+/* =========================
+   USERS
+   ========================= */
+const USERS = {
+  sample1: {
+    password: "spark123",
+    blindName: "Sample User",
+    home: { name: "Home", value: "SM City Baguio, Luneta Hill, Upper Session Road, Baguio City" },
+    pclu: { name: "PCLU Agoo La Union", value: "PCLU, Agoo, La Union" },
+    csi:  { name: "CSI Agoo La Union",  value: "CSI, Agoo, La Union" }
+  },
+  feyha: {
+    password: "spark123",
+    blindName: "Faith Althea",
+    home: { name: "Home", value: "Agoo, La Union" },
+    pclu: { name: "PCLU Agoo La Union", value: "PCLU, Agoo, La Union" },
+    csi:  { name: "CSI Agoo La Union",  value: "CSI, Agoo, La Union" }
+  },
+  respondent: {
+    password: "spark123",
+    blindName: "respondent",
+    home: { name: "Home", value: "Agoo, La Union" },
+    pclu: { name: "PCLU Agoo La Union", value: "PCLU, Agoo, La Union" },
+    csi:  { name: "CSI Agoo La Union",  value: "CSI, Agoo, La Union" }
+  }
+};
+
+/* Emergency */
+const CARETAKER_NUMBER = "09919449953";
+const CARETAKER_TEL = "tel:" + CARETAKER_NUMBER;
+
+/* Elements */
+const statusEl = document.getElementById("status");
+const topbar = document.getElementById("topbar");
+const repeatBtn = document.getElementById("repeatBtn");
+const stopBtn = document.getElementById("stopBtn");
+const backBtn = document.getElementById("backBtn");
+
+const loginScreen = document.getElementById("loginScreen");
+const introScreen = document.getElementById("introScreen");
+const landscapeWrap = document.getElementById("landscapeWrap");
+const landscapeScreen = document.getElementById("landscapeScreen");
+
+const userInput = document.getElementById("userInput");
+const passInput = document.getElementById("passInput");
+const loginBtn = document.getElementById("loginBtn");
+
+const startButton = document.getElementById("startButton");
+const leftBtn = document.getElementById("leftBtn");
+const rightBtn = document.getElementById("rightBtn");
+
+const destScreen = document.getElementById("destScreen");
+const destLeft = document.getElementById("destLeft");
+const destMid = document.getElementById("destMid");
+const destRight = document.getElementById("destRight");
+
+const emergencyOverlay = document.getElementById("emergencyOverlay");
+const callBtn = document.getElementById("callBtn");
+const cancelBtn = document.getElementById("cancelBtn");
+
+/* State */
+let loggedInUser = "";
+let openingExternal = false;
+let prevLandscape = null;
+let destOpen = false;
+let emergencyOpen = false;
+
+/* Helpers */
+function setStatus(msg){ statusEl.textContent = msg; }
+function vibrate(pattern=40){ if (navigator.vibrate) navigator.vibrate(pattern); }
+
+function speak(text, onEnd){
+  if (!("speechSynthesis" in window)) { if (onEnd) onEnd(); return; }
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text.trim());
+  u.rate = 1; u.pitch = 1; u.volume = 1;
+  u.onstart = () => setStatus("Speaking…");
+  u.onend = () => { setStatus(""); if (onEnd) onEnd(); };
+  window.speechSynthesis.speak(u);
+}
+
+function isLandscape(){
+  return window.matchMedia("(orientation: landscape)").matches || window.innerWidth > window.innerHeight;
+}
+function showTopbar(show){ topbar.classList.toggle("hidden", !show); }
+
+function displayName(){
+  if (!loggedInUser) return "user";
+  return USERS[loggedInUser]?.blindName || "user";
+}
+
+/* Texts */
+function introText(){
+  const name = displayName();
+  return `
+Hello ${name}. My name is SPARK, also known as the Smart Portable Assistive Range-Sensing Kit.....
+
+I will act as your eyes: by detecting obstacles in your surroundings and helping you navigate safely and confidently...
+
+Your phone will serve as your controller... you will use it to control me... your AI Assistant.::
+
+Your screen will be the buttons... 
+if you press the Upper left part of your screen... it willl Repeat what i'm saying... the Upper middle part will make me Stop talking... and finally, if you press the Upper right part, will return you to the previous page...
+In case of Emergency: Triple tap anywhere. In emergency screen, press the left side of your screen to calls your caretaker: press the right side of your screen to cancel.
+After this introduction, rotate your phone to landscape mode to begin your journey.
+`;
+}
+const landscapePrompt = `
+Landscape mode activated:
+The Left side of your screen will avtivate the: AI camera assistance: and the
+Right side of your screen will activate: Google Maps navigation.
+`;
+
+/* Screens */
+function hideDestScreen(){ destOpen = false; destScreen.style.display = "none"; }
+
+function showLogin(){
+  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+  hideDestScreen();
+  hideEmergency(false);
+  showTopbar(false);
+
+  loginScreen.classList.remove("hidden");
+  introScreen.classList.add("hidden");
+  landscapeWrap.classList.add("hidden");
+  landscapeScreen.style.display = "none";
+  setStatus("");
+}
+
+function showIntro(){
+  hideDestScreen();
+  hideEmergency(false);
+  showTopbar(true);
+
+  loginScreen.classList.add("hidden");
+  introScreen.classList.remove("hidden");
+  landscapeWrap.classList.add("hidden");
+  landscapeScreen.style.display = "none";
+
+  setStatus("Tap START.");
+  updateOrientationUI();
+}
+
+function showLandscape(){
+  showTopbar(true);
+  introScreen.classList.add("hidden");
+  landscapeWrap.classList.remove("hidden");
+  landscapeScreen.style.display = "flex";
+}
+
+/* Orientation */
+function updateOrientationUI(){
+  const now = isLandscape();
+  if (prevLandscape === null) prevLandscape = now;
+
+  if (!loginScreen.classList.contains("hidden")) { prevLandscape = now; return; }
+
+  const enteredLandscape = (prevLandscape === false && now === true);
+
+  if (now){
+    showLandscape();
+    if (enteredLandscape && !openingExternal && !emergencyOpen) speak(landscapePrompt);
+  } else {
+    hideDestScreen();
+    landscapeScreen.style.display = "none";
+    landscapeWrap.classList.add("hidden");
+    introScreen.classList.remove("hidden");
+  }
+
+  prevLandscape = now;
+}
+
+/* Login */
+loginBtn.addEventListener("click", () => {
+  const u = userInput.value.trim().toLowerCase();
+  const p = passInput.value.trim();
+
+  if (!USERS[u] || USERS[u].password !== p){
+    setStatus("Invalid login.");
+    vibrate(30);
+    return;
+  }
+
+  loggedInUser = u;
+  vibrate(40);
+  speak(`Welcome ${USERS[u].blindName || "user"}.`, () => showIntro());
+});
+
+/* Topbar */
+repeatBtn.addEventListener("click", () => {
+  vibrate(25);
+  if (emergencyOpen){
+    speak("Emergency screen. Press the Left side to calls your caretaker. press the Right side to cancel emergency mode.");
+    return;
+  }
+  if (destOpen){
+    speak("Destination screen. Left is home. Middle is P. C. L. U. Right is C. S. I.");
+    return;
+  }
+  if (isLandscape()) speak(landscapePrompt);
+  else speak(introText());
+});
+stopBtn.addEventListener("click", () => {
+  vibrate(25);
+  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+  setStatus("Stopped.");
+});
+backBtn.addEventListener("click", () => {
+  vibrate(30);
+  if (emergencyOpen){ hideEmergency(true); return; }
+  if (destOpen){ hideDestScreen(); speak("Back."); return; }
+
+  openingExternal = false;
+  prevLandscape = null;
+  loggedInUser = "";
+  userInput.value = "";
+  passInput.value = "";
+  showLogin();
+});
+
+/* Intro */
+startButton.addEventListener("click", () => {
+  vibrate(40);
+  speak(introText());
+  setStatus("Rotate to landscape when ready.");
+});
+
+/* Landscape actions */
+leftBtn.addEventListener("click", () => {
+  vibrate(55);
+  openingExternal = true;
+  setStatus("Opening ChatGPT app…");
+  window.location.href = "chatgpt://";
+  speak("Opening AI Assistive Camera. The A.I. that will serve as your eyes.");
+});
+
+function openMaps(destinationValue, destinationName){
+  openingExternal = true;
+  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destinationValue)}&travelmode=walking`;
+  window.open(mapsUrl, "_blank");
+  speak(`Opening Google Maps navigation to ${destinationName}.`);
+}
+
+function showDestChooser(){
+  destOpen = true;
+  destScreen.style.display = "block";
+
+  const u = USERS[loggedInUser];
+  const home = u?.home || { name:"Home", value:"Agoo, La Union" };
+  const pclu = u?.pclu || { name:"PCLU Agoo La Union", value:"PCLU, Agoo, La Union" };
+  const csi  = u?.csi  || { name:"CSI Agoo La Union",  value:"CSI, Agoo, La Union" };
+
+  destLeft.onclick  = () => { vibrate(55); hideDestScreen(); openMaps(home.value, home.name); };
+  destMid.onclick   = () => { vibrate(55); hideDestScreen(); openMaps(pclu.value, "PCLU"); };
+  destRight.onclick = () => { vibrate(55); hideDestScreen(); openMaps(csi.value,  "CSI"); };
+
+  speak("Choose destination. Left is home. Middle is P C L U. Right is C S I. Use the top bar for Repeat, Stop, and Back.");
+}
+
+rightBtn.addEventListener("click", () => {
+  vibrate(55);
+  if (!loggedInUser){
+    openingExternal = true;
+    window.open("https://www.google.com/maps", "_blank");
+    speak("Opening Google Maps.");
+    return;
+  }
+  showDestChooser();
+});
+
+/* Reset after returning */
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) setTimeout(() => { openingExternal = false; }, 1200);
+});
+
+/* ===== Emergency ===== */
+function showEmergency(){
+  emergencyOpen = true;
+  emergencyOverlay.style.display = "block";
+}
+function hideEmergency(speakBack){
+  emergencyOpen = false;
+  emergencyOverlay.style.display = "none";
+  if (speakBack) speak("Back.");
+}
+function emergencyCallNow(){
+  window.location.href = CARETAKER_TEL;
+}
+function triggerEmergency(){
+  showEmergency();
+  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+  vibrate([200,100,200]);
+  speak("Emergency activated. Left side calls caretaker. Right side cancels.");
+  setStatus("Emergency activated.");
+  // iPhone gesture compliance: call immediately
+  emergencyCallNow();
+}
+
+callBtn.addEventListener("click", () => {
+  vibrate(60);
+  emergencyCallNow();
+});
+cancelBtn.addEventListener("click", () => {
+  vibrate(40);
+  hideEmergency(true);
+});
+
+/* ===============================
+   DOUBLE TAP = SKIP LOGIN
+   TRIPLE TAP = EMERGENCY
+   iPhone reliable: touchend
+   =============================== */
+let tapTimes = [];
+const TAP_WINDOW_MS = 900;
+const DOUBLE_WAIT_MS = 220;
+
+function isInsideInput(target){
+  const tag = target?.tagName?.toLowerCase();
+  return tag === "input" || tag === "textarea";
+}
+function triggerSkip(){
+  loggedInUser = "";
+  vibrate(60);
+  speak("Login skipped. Going to introduction.", () => showIntro());
+}
+
+document.addEventListener("touchend", (e) => {
+  if (isInsideInput(e.target)) return;
+
+  const now = Date.now();
+  tapTimes.push(now);
+  tapTimes = tapTimes.filter(t => (now - t) <= TAP_WINDOW_MS);
+
+  if (tapTimes.length >= 3){
+    tapTimes = [];
+    triggerEmergency();
+    return;
+  }
+
+  if (tapTimes.length === 2){
+    if (!loginScreen.classList.contains("hidden")) {
+      setTimeout(() => {
+        if (tapTimes.length === 2){
+          tapTimes = [];
+          triggerSkip();
+        }
+      }, DOUBLE_WAIT_MS);
+    }
+  }
+}, { passive: true });
+
+document.addEventListener("contextmenu", (e) => e.preventDefault());
+
+/* Init */
+showLogin();
+window.addEventListener("orientationchange", updateOrientationUI);
+window.addEventListener("resize", updateOrientationUI);
+
+if ("speechSynthesis" in window) {
+  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+}
+</script>
+
+</body>
+</html>
